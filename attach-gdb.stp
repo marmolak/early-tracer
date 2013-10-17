@@ -1,4 +1,4 @@
-global wrapper_path;
+global wrapper_path = "";
 
 probe begin {
     print ("Ready to attach...\n");
@@ -14,7 +14,7 @@ probe procfs("wrapper_path").write {
 
 probe kprocess.exec {
     if ( filename == wrapper_path ) {
-        cmd = sprintf ("gdbtui -ex 'catch exec' -ex 'shell kill -USR1 %d' -ex 'continue' -ex 'continue' -p %d", pid(), pid());
+        cmd = sprintf ("gdb -ex 'catch exec' -ex 'shell kill -USR1 %d' -ex 'continue' -ex 'continue' -p %d", pid(), pid());
         system (cmd);
     }
 }

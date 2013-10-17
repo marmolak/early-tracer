@@ -8,6 +8,8 @@
 #include <string.h>
 #include <stdio.h>
 
+#define PROC_PATH "/proc/systemtap/attach_gdb/wrapper_path"
+
 /* Because pause() */
 void unfreeze (int unused)
 {
@@ -20,12 +22,31 @@ int main (int argc, char **argv)
     struct sigaction sig;
     memset (&sig, 0, sizeof(sig));
 
-    int fd = open ("/proc/systemtap/attach_gdb/wrapper_path", O_WRONLY);
-    if ( fd == -1 ) {
-        perror ("Open file");
+    int fd = open (PROC_PATH, O_RDONLY);
+    if (fd == -1) {
+        perror ("Open proc interface");
         return EXIT_FAILURE;
     }
-    write (fd, argv[0], strlen(argv[0]));
+    
+    char buf[1024] = { 0 };
+    if (read (fd, buf, sizeof (buf) - 1) == -1) {
+        perror ("Read from proc interface");
+        close (fd);
+        return EXIT_FAILURE;
+    }
+
+    if (strncmp (buf, argv[0], strlen (argv[0]) != 0)) {
+        close (fd);
+        int fd = open (PROC_PATH, O_WRONLY);
+        if (fd == -1) {
+            perror ("Open proc interface");
+            return EXIT_FAILURE;
+        }
+        write (fd, argv[0], strlen(argv[0]));
+        close (fd);
+        execve (argv[0], argv, NULL);
+        return EXIT_FAILURE;
+    }
     close (fd);
 
     sig.sa_handler = &unfreeze;
