@@ -1,0 +1,10 @@
+probe begin {
+    print ("Ready to attach...\n");
+}
+
+probe kprocess.exec {
+    if ( filename == "./wraprun" ) {
+        cmd = sprintf ("gdb -ex 'catch exec' -ex 'shell kill -USR1 %d' -ex 'continue' -ex 'continue' -p %d", pid(), pid());
+        system (cmd);
+    }
+}
