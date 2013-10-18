@@ -10,6 +10,40 @@
 
 #define PROC_PATH "/proc/systemtap/attach_gdb/wrapper_path"
 
+void proc_write (const char *const data)
+{
+    int fd = open (PROC_PATH, O_WRONLY);
+    if (fd == -1) {
+        perror ("Open proc interface");
+        exit (EXIT_FAILURE);
+    }
+
+    if (write (fd, data, strlen(data)) == -1) {
+        perror ("Write to proc interface");
+        close (fd);
+        exit (EXIT_FAILURE);
+    }
+    close (fd);
+}
+
+#define proc_read(x) proc_read_impl ((x), sizeof ((x) - 1))
+void proc_read_impl (char *buf, size_t buf_size)
+{
+    int fd = open (PROC_PATH, O_RDONLY);
+    if (fd == -1) {
+        perror ("Open proc interface");
+        exit (EXIT_FAILURE);
+    }
+    
+    if (read (fd, buf, buf_size) == -1) {
+        perror ("Read from proc interface");
+        close (fd);
+        exit (EXIT_FAILURE);
+    }
+    close (fd);
+}
+
+
 /* Because pause() */
 void unfreeze (int unused)
 {
@@ -22,32 +56,13 @@ int main (int argc, char **argv)
     struct sigaction sig;
     memset (&sig, 0, sizeof(sig));
 
-    int fd = open (PROC_PATH, O_RDONLY);
-    if (fd == -1) {
-        perror ("Open proc interface");
-        return EXIT_FAILURE;
-    }
-    
     char buf[1024] = { 0 };
-    if (read (fd, buf, sizeof (buf) - 1) == -1) {
-        perror ("Read from proc interface");
-        close (fd);
-        return EXIT_FAILURE;
-    }
-
+    proc_read (buf);
     if (strncmp (buf, argv[0], strlen (argv[0]) != 0)) {
-        close (fd);
-        int fd = open (PROC_PATH, O_WRONLY);
-        if (fd == -1) {
-            perror ("Open proc interface");
-            return EXIT_FAILURE;
-        }
-        write (fd, argv[0], strlen(argv[0]));
-        close (fd);
+        proc_write (argv[0]);
         execve (argv[0], argv, NULL);
         return EXIT_FAILURE;
     }
-    close (fd);
 
     sig.sa_handler = &unfreeze;
     sigaction (SIGUSR1, &sig, NULL);
