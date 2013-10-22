@@ -1,0 +1,5 @@
+How to use:
+
+stap -m attach_gdb ./attach-gdb.stp
+
+wraprun ls
