@@ -14,7 +14,7 @@ probe procfs("wrapper_path").write {
 
 probe nd_syscall.execve {
     if ( filename == wrapper_path ) {
-        cmd = sprintf ("ddd --debugger \"gdb -ex 'catch exec' -ex 'shell kill -USR1 %d' -ex 'continue' -ex 'continue' -p %d; reset; echo 'Ready to attach...'\"", pid(), pid());
+        cmd = sprintf ("gdb --debugger \"gdb -ex 'catch exec' -ex 'shell kill -USR1 %d' -ex 'continue' -ex 'continue' -p %d; reset; echo 'Ready to attach...'\"", pid(), pid());
         system (cmd);
     }
 }
